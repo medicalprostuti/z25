@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>যুলোজি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "শ্বসনতন্ত্রের কোন অংশে অক্সিজেন ও কার্বন ডাই অক্সাইডের বিনিময় হয়?",
+          options: {
+            a: "ব্রঙ্কাস",
+            b: "অ্যালভিওলাস",
+            c: "ট্রাকিয়া",
+            d: "ব্রঙ্কিওল",
+          },
+          correct: "b",
+          explanation:
+            "<p>শ্বসনতন্ত্রের <strong>অ্যালভিওলাস</strong> (Alveolus) নামক ক্ষুদ্র বায়ুথলিতে অক্সিজেন ও কার্বন ডাই অক্সাইডের বিনিময় হয়। অ্যালভিওলাসের পাতলা প্রাচীর এবং এর চারপাশে থাকা কৈশিক নালীর মাধ্যমে গ্যাসীয় বিনিময় ঘটে।</p>",
+        },
+        {
+          id: 2,
+          question: "শ্বাসতন্ত্রের কোন অংশে গ্যাসীয় বিনিময় হয়?",
+          options: {
+            a: "ট্রাকিয়া",
+            b: "অ্যালভিওলাস",
+            c: "ব্রঙ্কিওল",
+            d: "ব্রঙ্কাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>শ্বাসতন্ত্রের <strong>অ্যালভিওলাস</strong> (Alveolus) অংশে গ্যাসীয় বিনিময় হয়। এটি ফুসফুসের ক্ষুদ্রতম কার্যকরী একক, যেখানে রক্ত এবং বায়ুর মধ্যে অক্সিজেন ও কার্বন ডাই অক্সাইডের আদান-প্রদান ঘটে।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "নিচের কোনটি মানবদেহের শ্বসনতন্ত্রের বায়ু পরিবহন অঞ্চল নয়?",
+          options: {
+            a: "শ্বাসনালি",
+            b: "ব্রঙ্কাস",
+            c: "প্রান্তীয় ব্রঙ্কিওল",
+            d: "অ্যালভিওলার নালি",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানবদেহের শ্বসনতন্ত্রের <strong>অ্যালভিওলার নালি</strong> (Alveolar duct) হলো গ্যাসীয় বিনিময় অঞ্চলের অংশ, বায়ু পরিবহন অঞ্চলের নয়। শ্বাসনালি (Trachea), ব্রঙ্কাস (Bronchus) এবং প্রান্তীয় ব্রঙ্কিওল (Terminal bronchiole) হলো বায়ু পরিবহন অঞ্চলের অংশ, যা ফুসফুসে বাতাস নিয়ে যায়।</p>",
+        },
+        {
+          id: 4,
+          question: "সারফেকটেন্ট কোথায় পাওয়া যায়?",
+          options: {
+            a: "স্বরযন্ত্রে",
+            b: "শ্বাসনালিতে",
+            c: "অ্যালভিওলাসে",
+            d: "ব্রঙ্কাসে",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>সারফেকটেন্ট</strong> (Surfactant) <strong>অ্যালভিওলাসে</strong> (Alveolus) পাওয়া যায়। এটি অ্যালভিওলাসের ভেতরের প্রাচীরের কোষ থেকে নিঃসৃত একটি পদার্থ যা অ্যালভিওলাসের পৃষ্ঠটান কমিয়ে দেয় এবং ফুসফুসকে সহজে প্রসারিত হতে সাহায্য করে, যাতে বাতাস আদান-প্রদান মসৃণ হয়।</p>",
+        },
+        {
+          id: 5,
+          question: "Adam's Apple কোথায় থাকে?",
+          options: {
+            a: "স্বরযন্ত্র",
+            b: "শ্বাসনালি",
+            c: "ব্রঙ্কাস",
+            d: "ফুসফুস",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>Adam's Apple</strong> (বা থাইরয়েড তরুণাস্থি) <strong>স্বরযন্ত্রে</strong> (Larynx) থাকে। এটি স্বরযন্ত্রের সামনের অংশ এবং পুরুষদের ক্ষেত্রে এটি সাধারণত মহিলাদের চেয়ে বেশি স্পষ্টভাবে দেখা যায়।</p>",
+        },
+        {
+          id: 6,
+          question: "শ্বাসতন্ত্র সম্পর্কে নিম্নের কোন তথ্যটি সঠিক নয়?",
+          options: {
+            a: "ব্যাপন প্রক্রিয়ায় অক্সিজেন বায়ুথলি থেকে কৈশিক নালির রক্তে প্রবেশ করে",
+            b: "ফুসফুসের কৈশিক নালিতে অক্সিজেন রক্তের হিমোগ্লোবিনের সাথে বিক্রিয়া করে স্থায়ী যৌগ অক্সিহিমোগ্লোবিন তৈরি করে",
+            c: "উপজিহ্বা খাদ্যদ্রব্য শ্বাসনালিতে প্রবেশে বাঁধা দান করে",
+            d: "প্রশ্বাসের সময় ফুসফুস প্রসারিত হয়",
+          },
+          correct: "b",
+          explanation:
+            "<p>ফুসফুসের কৈশিক নালিতে অক্সিজেন রক্তের হিমোগ্লোবিনের সাথে বিক্রিয়া করে <strong>অস্থায়ী</strong> যৌগ <strong>অক্সিহিমোগ্লোবিন</strong> তৈরি করে, স্থায়ী যৌগ নয়। এই অক্সিহিমোগ্লোবিনই অক্সিজেনকে দেহের বিভিন্ন কোষে পরিবহন করে। তাই অপশন (b) সঠিক নয়।</p>",
+        },
+        {
+          id: 7,
+          question: "ফুসফুসের গঠন ও কার্যগত একক-",
+          options: {
+            a: "অ্যালভিওলাস",
+            b: "ব্রঙ্কিওল",
+            c: "নিউরন",
+            d: "লোবিউল",
+          },
+          correct: "a",
+          explanation:
+            "<p>ফুসফুসের গঠন ও কার্যগত একক হলো <strong>অ্যালভিওলাস</strong> (Alveolus)। এখানেই গ্যাসীয় বিনিময় ঘটে, যা শ্বসন প্রক্রিয়ার মূল কাজ।</p>",
+        },
+        {
+          id: 8,
+          question: "ফুসফুসের দ্বিস্তরী আবরণের ভিতরের পর্দার নাম কী?",
+          options: {
+            a: "ভিসেরাল প্লিউরা",
+            b: "ভেস্টিবিউলার প্লিউরা",
+            c: "প্যারাইটাল প্লিউরা",
+            d: "লোবিওলার প্লিউরা",
+          },
+          correct: "a",
+          explanation:
+            "<p>ফুসফুসের দ্বিস্তরী আবরণের ভিতরের পর্দার নাম <strong>ভিসেরাল প্লিউরা</strong> (Visceral pleura)। এটি সরাসরি ফুসফুসের পৃষ্ঠকে আবৃত করে রাখে। বাইরের পর্দাটিকে প্যারাইটাল প্লিউরা (Parietal pleura) বলা হয়।</p>",
+        },
+        {
+          id: 9,
+          question: "ভ্রূণের ফুসফুসে কত সপ্তাহে সারফ্যাকটেন্ট পাওয়া যায়?",
+          options: {
+            a: "১৮ সপ্তাহ",
+            b: "২৩ সপ্তাহ",
+            c: "৩০ সপ্তাহ",
+            d: "৩২ সপ্তাহ",
+          },
+          correct: "b",
+          explanation:
+            "<p>ভ্রূণের ফুসফুসে <strong>২৩ সপ্তাহ</strong> থেকে সারফ্যাকটেন্ট (Surfactant) পাওয়া যেতে শুরু করে, যদিও এর পর্যাপ্ত উৎপাদন সাধারণত ৩২-৩৬ সপ্তাহের মধ্যে হয়। অকালে জন্ম নেওয়া শিশুদের ফুসফুসের পরিপক্বতার জন্য সারফ্যাকটেন্টের অভাব একটি বড় সমস্যা।</p>",
+        },
+        {
+          id: 10,
+          question: "মানুষের শ্বসনতন্ত্রের স্বরযন্ত্রে কয়টি ভোকাল কর্ড থাকে?",
+          options: {
+            a: "৬টি",
+            b: "৫টি",
+            c: "৪টি",
+            d: "৩টি",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানুষের শ্বসনতন্ত্রের স্বরযন্ত্রে (Larynx) <strong>৪টি ভোকাল কর্ড</strong> (Vocal cord) থাকে। এর মধ্যে দুটি প্রকৃত ভোকাল কর্ড (True vocal cords) যা শব্দ উৎপাদনে ব্যবহৃত হয় এবং দুটি অপ্রকৃত ভোকাল কর্ড (False vocal cords) যা প্রকৃত ভোকাল কর্ডকে রক্ষা করে।</p>",
+        },
+        {
+          id: 11,
+          question: "বাম ফুসফুসে কতটি লোবিউল থাকে?",
+          options: {
+            a: "২টি",
+            b: "৪টি",
+            c: "৬টি",
+            d: "৮টি",
+          },
+          correct: "d",
+          explanation:
+            "<p>বাম ফুসফুসে সাধারণত <strong>৮টি লোবিউল</strong> (Lobule) বা ব্রঙ্কোপালমোনারি সেগমেন্ট থাকে। ডান ফুসফুসে ১০টি লোবিউল থাকে।</p>",
+        },
+        {
+          id: 12,
+          question: "ফুসফুসের আবরণের নাম কী?",
+          options: {
+            a: "পেরিকার্ডিয়াম",
+            b: "গ্লিসন ক্যাপস্যুল",
+            c: "পিউরা",
+            d: "সারকোলেমা",
+          },
+          correct: "c",
+          explanation:
+            "<p>ফুসফুসের আবরণের নাম <strong>প্লিউরা</strong> (Pleura)। এটি দুটি স্তর নিয়ে গঠিত: ভিসেরাল প্লিউরা (ফুসফুসের পৃষ্ঠে) এবং প্যারাইটাল প্লিউরা (বক্ষ প্রাচীরে)। এই দুটি স্তরের মাঝে প্লিউরাল ফ্লুইড থাকে যা শ্বাস-প্রশ্বাসের সময় ঘর্ষণ কমাতে সাহায্য করে।</p>",
+        },
+        {
+          id: 13,
+          question: "ফুসফুসের প্রাচীরের কোষ থেকে কী নিঃসৃত হয়?",
+          options: {
+            a: "সেরাস ফ্লুইড",
+            b: "সারফেকটেন্ট",
+            c: "পেরিকার্ডিয়াল তরল",
+            d: "ভিট্রিয়াস ফ্লুইড",
+          },
+          correct: "a",
+          explanation:
+            "<p>ফুসফুসের প্রাচীরের প্লিউরাল মেমব্রেন থেকে <strong>সেরাস ফ্লুইড</strong> (Serous fluid) নিঃসৃত হয়। এই তরল প্লিউরাল গহ্বরে থাকে এবং শ্বাস-প্রশ্বাসের সময় ফুসফুসকে ঘর্ষণমুক্তভাবে নড়াচড়া করতে সাহায্য করে। সারফেকটেন্ট অ্যালভিওলাসের কোষ থেকে নিঃসৃত হয়।</p>",
+        },
+        {
+          id: 14,
+          question: "শ্বাসনালিতে কোন ধরনের তরুণাস্থি দেখা যায়?",
+          options: {
+            a: "পীততত্ত্বময়",
+            b: "হায়ালিন",
+            c: "শ্বেততন্তুময়",
+            d: "ক্যালসিফাইড",
+          },
+          correct: "b",
+          explanation:
+            "<p>শ্বাসনালিতে (Trachea) <strong>হায়ালিন তরুণাস্থি</strong> (Hyaline cartilage) দেখা যায়। এই C-আকৃতির তরুণাস্থিগুলো শ্বাসনালিকে খোলা রাখতে সাহায্য করে এবং শ্বাস-প্রশ্বাসের সময় এটি চুপসে যাওয়া থেকে রক্ষা করে।</p>",
+        },
+        {
+          id: 15,
+          question: "নিচের কোনটি উর্ধ্ব শ্বসননালির অংশ?",
+          options: {
+            a: "ট্রাকিয়া",
+            b: "ব্রঙ্কি",
+            c: "ল্যারিংক্স",
+            d: "অ্যাট্রিয়াম",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>ল্যারিংক্স</strong> (Larynx) বা স্বরযন্ত্র হলো উর্ধ্ব শ্বসননালির অংশ। উর্ধ্ব শ্বসননালির মধ্যে নাসাগহ্বর, গলবিল এবং স্বরযন্ত্র অন্তর্ভুক্ত। ট্রাকিয়া ও ব্রঙ্কি নিম্ন শ্বসননালির অংশ।</p>",
+        },
+        {
+          id: 16,
+          question: "নিচের কোনটি ফুসফুসের অংশ নয়?",
+          options: {
+            a: "অ্যালভিওলাস",
+            b: "অ্যাট্রিয়াম",
+            c: "ট্রাকিয়া",
+            d: "ব্রঙ্কিউল",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>ট্রাকিয়া</strong> (Trachea) বা শ্বাসনালি ফুসফুসের অংশ নয়, এটি শ্বসনতন্ত্রের একটি অংশ যা গলা থেকে শুরু হয়ে ফুসফুসে ব্রঙ্কাসে বিভক্ত হয়। অ্যালভিওলাস, অ্যাট্রিয়াম (ফুসফুসের ক্ষুদ্র বায়ুকোষ) এবং ব্রঙ্কিউল ফুসফুসের অভ্যন্তরীণ অংশ।</p>",
+        },
+        {
+          id: 17,
+          question: "খাদ্যনালি ও শ্বসননালির অভিন্ন অংশ কোনটি?",
+          options: {
+            a: "নাসিকা",
+            b: "স্বরযন্ত্র",
+            c: "নাসাগলবিল",
+            d: "ট্রাকিয়া",
+          },
+          correct: "c",
+          explanation:
+            "<p>খাদ্যনালি ও শ্বসননালির অভিন্ন অংশ হলো <strong>নাসাগলবিল</strong> (Pharynx)। এই অংশটি মুখগহ্বর এবং নাসাগহ্বর থেকে বাতাস ও খাদ্য উভয়কেই গ্রহণ করে এবং পরে সেগুলো শ্বাসনালি বা খাদ্যনালিতে প্রবেশ করে।</p>",
+        },
+        {
+          id: 18,
+          question: "কোন পর্দা দ্বারা ফুসফুস উদর গহ্বর হতে আলাদা থাকে?",
+          options: {
+            a: "পেরিকার্ডিয়াম",
+            b: "গ্লিসন ক্যাপস্যুল",
+            c: "প্লিউরা",
+            d: "ডায়াফ্রাম",
+          },
+          correct: "d",
+          explanation:
+            "<p>ফুসফুস <strong>ডায়াফ্রাম</strong> (Diaphragm) নামক পেশীবহুল পর্দা দ্বারা উদর গহ্বর (Abdominal cavity) হতে আলাদা থাকে। ডায়াফ্রাম শ্বাস-প্রশ্বাসের প্রধান পেশী এবং বক্ষ ও উদর গহ্বরের মধ্যে একটি বিভাজন তৈরি করে।</p>",
+        },
+        {
+          id: 19,
+          question: "পূর্ণবয়স্ক একজন সুস্থ মানুষের দুটি ফুসফুসের ওজন কত?",
+          options: {
+            a: "প্রায় ২.৯ পাউন্ড",
+            b: "প্রায় ১.৯ পাউন্ড",
+            c: "প্রায় ০.৯ পাউন্ড",
+            d: "প্রায় ২.০ পাউন্ড",
+          },
+          correct: "b",
+          explanation:
+            "<p>পূর্ণবয়স্ক একজন সুস্থ মানুষের দুটি ফুসফুসের সম্মিলিত ওজন প্রায় <strong>১.৯ পাউন্ড</strong> (প্রায় ৮৫০ গ্রাম থেকে ১.১ কেজি) হতে পারে। ডান ফুসফুস বাম ফুসফুসের চেয়ে কিছুটা বড়।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "পূর্ণবয়স্ক একজন সুস্থ মানুষের দুটি ফুসফুসে কী পরিমাণ পালমোনারি অ্যালভিওলাই থাকে?",
+          options: {
+            a: "প্রায় ২০০ মিলিয়ন",
+            b: "প্রায় ৩০০ মিলিয়ন",
+            c: "প্রায় ৪৮০ মিলিয়ন",
+            d: "প্রায় ৭০০ মিলিয়ন",
+          },
+          correct: "c",
+          explanation:
+            "<p>পূর্ণবয়স্ক একজন সুস্থ মানুষের দুটি ফুসফুসে প্রায় <strong>৪৮০ মিলিয়ন</strong> (প্রায় ৪৮ কোটি) পালমোনারি অ্যালভিওলাই (Pulmonary alveoli) থাকে। এই বিশাল সংখ্যক অ্যালভিওলাই গ্যাসীয় বিনিময়ের জন্য একটি বড় পৃষ্ঠতল তৈরি করে।</p>",
+        },
+        {
+          id: 21,
+          question: "নিচের কোনটি নিম্ন শ্বসননালির অংশ?",
+          options: {
+            a: "নাস কা<sup>b</sup>",
+            b: "ব্রঙ্কি",
+            c: "ল্যারিংক্স",
+            d: "অ্যাট্রিয়াম",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>ব্রঙ্কি</strong> (Bronchi) হলো নিম্ন শ্বসননালির অংশ। নিম্ন শ্বসননালির মধ্যে ট্রাকিয়া, ব্রঙ্কি এবং ফুসফুস অন্তর্ভুক্ত। নাসিকা, নাসাগলবিল এবং ল্যারিংক্স উর্ধ্ব শ্বসননালির অংশ।</p>",
+        },
+        {
+          id: 22,
+          question: "নিচের কোন প্রবাহ চিত্রটি সঠিক?",
+          options: {
+            a: "ট্রাকিয়া → ব্রঙ্কাই → ব্রঙ্কিওল → অ্যালভিওলার নালি → অ্যালভিওলার থলি → অ্যালভিওলাস",
+            b: "ব্রঙ্কাই → ট্রাকিয়া → ব্রঙ্কিওল → অ্যালভিওলার নালি → অ্যালভিওলার থলি → অ্যালভিওলাস",
+            c: "ট্রাকিয়া → ব্রঙ্কিওল → ব্রঙ্কাই → অ্যালভিওলার নালি → অ্যালভিওলার থলি → অ্যালভিওলাস",
+            d: "ট্রাকিয়া → অ্যালভিওলার থলি → ব্রঙ্কাই → ব্রঙ্কিওল → অ্যালভিওলার নালি → অ্যালভিওলাস",
+          },
+          correct: "a",
+          explanation:
+            "<p>বায়ু প্রবাহের সঠিক গতিপথ হলো: <strong>ট্রাকিয়া → ব্রঙ্কাই → ব্রঙ্কিওল → অ্যালভিওলার নালি → অ্যালভিওলার থলি → অ্যালভিওলাস</strong>। এই ক্রমেই বাতাস ফুসফুসের গভীরে প্রবেশ করে গ্যাসীয় বিনিময়ের জন্য।</p>",
+        },
+        {
+          id: 23,
+          question: "ডায়াফ্রামের ক্ষেত্রে কোনটি প্রযোজ্য?",
+          options: {
+            a: "শ্বসনে এর কোনো ভূমিকা নেই",
+            b: "বক্ষ ও উদর গহ্বরকে পৃথক রাখে",
+            c: "ফ্রেনিক ধমনি রক্ত সংগ্রহ করে",
+            d: "সকল মেরুদণ্ডী প্রাণিতে পাওয়া যায়",
+          },
+          correct: "b",
+          explanation:
+            "<p>ডায়াফ্রামের ক্ষেত্রে <strong>বক্ষ ও উদর গহ্বরকে পৃথক রাখে</strong> এই তথ্যটি প্রযোজ্য। এটি বক্ষগহ্বর (Thoracic cavity) এবং উদর গহ্বর (Abdominal cavity) এর মধ্যে অবস্থিত একটি প্রধান পেশী যা শ্বাস-প্রশ্বাস প্রক্রিয়ায় গুরুত্বপূর্ণ ভূমিকা পালন করে।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "অ্যালভিওলাসে ডিটারজেন্টের মত ক্ষরিত রাসায়নিক পদার্থের নাম কী?",
+          options: {
+            a: "মিউকাস",
+            b: "সারফেকটেন্ট",
+            c: "ডিটারজেন্ট",
+            d: "গ্লুটিন্যান্ট",
+          },
+          correct: "b",
+          explanation:
+            "<p>অ্যালভিওলাসে ডিটারজেন্টের মত ক্ষরিত রাসায়নিক পদার্থের নাম <strong>সারফেকটেন্ট</strong> (Surfactant)। এটি অ্যালভিওলাসের পৃষ্ঠটান কমিয়ে তাদের খোলা রাখতে সাহায্য করে এবং শ্বাস-প্রশ্বাসকে সহজ করে তোলে।</p>",
+        },
+        {
+          id: 25,
+          question: "কোনটি অ্যালভিওলাসের প্রাচীর থেকে ক্ষরণ হয়?",
+          options: {
+            a: "প্লাজমা ফ্লুইড",
+            b: "সেরাস ফ্লুইড",
+            c: "মিউসিন",
+            d: "সারফ্যাকটেন্ট",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>সারফ্যাকটেন্ট</strong> (Surfactant) অ্যালভিওলাসের প্রাচীর থেকে ক্ষরণ হয়। এটি টাইপ II অ্যালভিওলার কোষে উৎপাদিত হয় এবং গ্যাসীয় বিনিময়ে অ্যালভিওলাসের স্থিতিশীলতা বজায় রাখে।</p>",
+        },
+        {
+          id: 26,
+          question: "শ্বসনতন্ত্রের কোন অংশে অলফ্যাক্টরি কোষ থাকে?",
+          options: {
+            a: "ভেস্টিবিউল",
+            b: "নাসাগহ্বর",
+            c: "পশ্চাৎ নাসারন্ধ্র",
+            d: "নাসাগলবিল",
+          },
+          correct: "b",
+          explanation:
+            "<p>শ্বসনতন্ত্রের <strong>নাসাগহ্বরে</strong> (Nasal cavity) অলফ্যাক্টরি কোষ (Olfactory cells) থাকে। এই কোষগুলো ঘ্রাণ উপলব্ধির জন্য দায়ী।</p>",
+        },
+        {
+          id: 27,
+          question: "ফুসফুসের দ্বিস্তরী পিউরাল পর্দার অংশ কোনগুলো?",
+          options: {
+            a: "ভেস্টিবিউল ও প্যারাইটাল",
+            b: "ভিসেরাল ও লোবিউল",
+            c: "ব্রঙ্কিওল ও লোবিউল",
+            d: "ভিসেরাল ও প্যারাইটাল",
+          },
+          correct: "d",
+          explanation:
+            "<p>ফুসফুসের দ্বিস্তরী প্লিউরাল (Pleural) পর্দার অংশ হলো <strong>ভিসেরাল ও প্যারাইটাল</strong> (Visceral and Parietal)। ভিসেরাল প্লিউরা ফুসফুসকে আবৃত করে এবং প্যারাইটাল প্লিউরা বক্ষ প্রাচীরের সাথে সংযুক্ত থাকে।</p>",
+        },
+        {
+          id: 28,
+          question:
+            "মানবদেহে ট্রাকিয়ার দ্বি-বিভাজনে সৃষ্ট শাখা দুটিকে কী বলে?",
+          options: {
+            a: "প্রান্তীয় ব্রঙ্কিওল",
+            b: "প্রাইমারি ব্রঙ্কাস",
+            c: "সেকেন্ডারি ব্রঙ্কাস",
+            d: "টার্সিয়ারি ব্রঙ্কাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানবদেহে ট্রাকিয়ার (Trachea) দ্বি-বিভাজনে সৃষ্ট শাখা দুটিকে <strong>প্রাইমারি ব্রঙ্কাস</strong> (Primary bronchus) বা প্রধান ব্রঙ্কাস বলে। একটি ডান ফুসফুসে এবং অন্যটি বাম ফুসফুসে প্রবেশ করে।</p>",
+        },
+        {
+          id: 29,
+          question: "শ্বাসনালি বা ট্রাকিয়া কতটি তরুণাস্থি দ্বারা নির্মিত?",
+          options: {
+            a: "১৬-২০",
+            b: "২৬-৩০",
+            c: "৩০-৩৬",
+            d: "৩৬-৪০",
+          },
+          correct: "a",
+          explanation:
+            "<p>শ্বাসনালি বা ট্রাকিয়া (Trachea) সাধারণত <strong>১৬-২০টি</strong> C-আকৃতির হায়ালিন তরুণাস্থি (Hyaline cartilage) দ্বারা নির্মিত। এই তরুণাস্থিগুলো শ্বাসনালিকে খোলা রাখতে সাহায্য করে।</p>",
+        },
+        {
+          id: 30,
+          question: "মানুষের ট্রাকিয়ার শাখাকে কী বলে?",
+          options: {
+            a: "অ্যালভিওলাস",
+            b: "ব্রঙ্কাস",
+            c: "গলবিল",
+            d: "ফুসফুস",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানুষের ট্রাকিয়ার (Trachea) শাখাকে <strong>ব্রঙ্কাস</strong> (Bronchus) বলে। ট্রাকিয়া দুটি প্রধান ব্রঙ্কাসে বিভক্ত হয়, যা প্রতিটি ফুসফুসে প্রবেশ করে এবং আরও ছোট শাখায় বিভক্ত হয়।</p>",
+        },
+        {
+          id: 31,
+          question: "ডান ফুসফুস কতটি লোবিওলে বিভক্ত?",
+          options: {
+            a: "২",
+            b: "৩",
+            c: "১০",
+            d: "৮",
+          },
+          correct: "c",
+          explanation:
+            "<p>ডান ফুসফুস সাধারণত <strong>১০টি লোবিওলে</strong> (Lobule) বা ব্রঙ্কোপালমোনারি সেগমেন্টে বিভক্ত। বাম ফুসফুসে সাধারণত ৮টি লোবিউল থাকে।</p>",
+        },
+        {
+          id: 32,
+          question: "শব্দ উৎপন্ন করে নিচের কোনটি?",
+          options: {
+            a: "ফুসফুস",
+            b: "ব্রঙ্কাস",
+            c: "ল্যারিংক্স",
+            d: "অস্থিসন্ধি",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>ল্যারিংক্স</strong> (Larynx) বা স্বরযন্ত্র শব্দ উৎপন্ন করে। এর মধ্যে থাকা ভোকাল কর্ড বা স্বরতন্ত্রীগুলো বাতাস প্রবাহের সময় কম্পিত হয়ে শব্দ তৈরি করে।</p>",
+        },
+        {
+          id: 33,
+          question: "মানুষের ফুসফুসে মোট কয়টি লোব বিদ্যমান?",
+          options: {
+            a: "২",
+            b: "৩",
+            c: "৮",
+            d: "৫",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানুষের ফুসফুসে মোট <strong>৫টি লোব</strong> (Lobe) বিদ্যমান। ডান ফুসফুসে ৩টি লোব (উর্ধ্ব, মধ্য, নিম্ন) এবং বাম ফুসফুসে ২টি লোব (উর্ধ্ব, নিম্ন) থাকে।</p>",
+        },
+        {
+          id: 34,
+          question: "ফুসফুসে বায়ু প্রবেশের সঠিক গতিপথ কোনটি?",
+          options: {
+            a: "ল্যারিংক্স → ব্রঙ্কাই → ট্রাকিয়া → অ্যালভিওলি",
+            b: "ট্রাকিয়া → ল্যারিংক্স → ব্রঙ্কাই → অ্যালভিওলি",
+            c: "ব্রঙ্কাই → ট্রাকিয়া → ল্যারিংক্স → অ্যালভিওলি",
+            d: "ল্যারিংক্স → ট্রাকিয়া → ব্রঙ্কাই → অ্যালভিওলি",
+          },
+          correct: "d",
+          explanation:
+            "<p>ফুসফুসে বায়ু প্রবেশের সঠিক গতিপথ হলো: <strong>ল্যারিংক্স → ট্রাকিয়া → ব্রঙ্কাই → অ্যালভিওলি</strong>। এটি নাসাগহ্বর/মুখগহ্বর থেকে শুরু হয়ে ফুসফুসের গভীরে অ্যালভিওলাসে পৌঁছায়।</p>",
+        },
+        {
+          id: 35,
+          question:
+            "ভোকাল কর্ড বা স্বরতন্ত্রী শ্বাসতন্ত্রের কোন অংশে পাওয়া যায়?",
+          options: {
+            a: "গলবিল",
+            b: "ল্যারিংক্স",
+            c: "গ্রটিস",
+            d: "ব্রঙ্কাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>ভোকাল কর্ড (Vocal cord) বা স্বরতন্ত্রী শ্বাসতন্ত্রের <strong>ল্যারিংক্স</strong> (Larynx) বা স্বরযন্ত্রে পাওয়া যায়। এগুলো শব্দ উৎপাদনের জন্য দায়ী।</p>",
+        },
+        {
+          id: 36,
+          question: "শ্বসনতন্ত্রের কোন অংশে এপিগ্লটিস অবস্থিত?",
+          options: {
+            a: "শ্বাসনালি",
+            b: "স্বরযন্ত্র",
+            c: "গলবিল",
+            d: "ভেস্টিবিউল",
+          },
+          correct: "b",
+          explanation:
+            "<p>শ্বসনতন্ত্রের <strong>স্বরযন্ত্রে</strong> (Larynx) এপিগ্লটিস (Epiglottis) অবস্থিত। এটি একটি তরুণাস্থিময় flap যা খাবার গিলতে গেলে শ্বাসনালিকে ঢেকে দেয়, যাতে খাদ্য বা পানীয় ফুসফুসে প্রবেশ করতে না পারে।</p>",
+        },
+        {
+          id: 37,
+          question: "এপিগ্লটিস থাকে কোনটিতে?",
+          options: {
+            a: "গলবিলে",
+            b: "ল্যারিংক্সে",
+            c: "নাসাগহ্বরে",
+            d: "ট্রাকিয়ায়",
+          },
+          correct: "b",
+          explanation:
+            "<p>এপিগ্লটিস (Epiglottis) <strong>ল্যারিংক্সে</strong> (Larynx) বা স্বরযন্ত্রে থাকে। এটি গলবিলের শেষ প্রান্তে এবং শ্বাসনালির প্রবেশমুখে অবস্থিত।</p>",
+        },
+        {
+          id: 38,
+          question: "ট্র্যাবেকুলি কোথায় পাওয়া যায়?",
+          options: {
+            a: "যকৃতে",
+            b: "রক্তে",
+            c: "ফুসফুসে",
+            d: "বৃক্কে",
+          },
+          correct: "c",
+          explanation:
+            "<p>ট্র্যাবেকুলি (Trabeculae) ফুসফুসে পাওয়া যায়, তবে আরও সুনির্দিষ্টভাবে বললে, এটি ফুসফুসের লোবিউলগুলোর মধ্যে সংযোগকারী তন্তুময় ব্যান্ড বোঝাতে ব্যবহৃত হয়। এছাড়াও, অন্যান্য অঙ্গ যেমন অস্থি বা প্লীহাতেও ট্র্যাবেকুলি দেখা যায়, যেখানে তারা কাঠামোগত সমর্থন দেয়।</p>",
+        },
+        {
+          id: 39,
+          question: "ব্রঙ্কাসের কোন অংশ ফুসফুসে প্রবেশ করে?",
+          options: {
+            a: "ব্রঙ্কিওল",
+            b: "লোবিউল",
+            c: "হাইলাম",
+            d: "অ্যাট্রিয়াম",
+          },
+          correct: "a",
+          explanation:
+            "<p>ব্রঙ্কাসের ক্ষুদ্র শাখা <strong>ব্রঙ্কিওল</strong> (Bronchiole) ফুসফুসের গভীরে প্রবেশ করে এবং শেষ পর্যন্ত অ্যালভিওলাসে গিয়ে শেষ হয়।</p>",
+        },
+        {
+          id: 40,
+          question: "ট্রাকিয়া কী দিয়ে গঠিত?",
+          options: {
+            a: "অস্থি",
+            b: "তরুণাস্থি",
+            c: "শিরা",
+            d: "ধমনি",
+          },
+          correct: "b",
+          explanation:
+            "<p>ট্রাকিয়া (Trachea) বা শ্বাসনালি <strong>তরুণাস্থি</strong> (Cartilage) দিয়ে গঠিত। বিশেষ করে, এটি C-আকৃতির হায়ালিন তরুণাস্থি দ্বারা গঠিত যা শ্বাসনালিকে খোলা রাখতে সাহায্য করে।</p>",
+        },
+        {
+          id: 41,
+          question:
+            "প্লুরা নামক দু'স্তরবিশিষ্ট এক ধরনের পর্দা দ্বারা ঢাকা থাকে কোনটি?",
+          options: {
+            a: "অ্যালভিওলাস",
+            b: "স্বরযন্ত্র",
+            c: "ট্রাকিয়া",
+            d: "ফুসফুস",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>ফুসফুস</strong> (Lungs) প্লুরা (Pleura) নামক দু'স্তরবিশিষ্ট এক ধরনের পর্দা দ্বারা ঢাকা থাকে। এই পর্দা ফুসফুসকে বক্ষ গহ্বরে রক্ষা করে এবং শ্বাস-প্রশ্বাসের সময় ঘর্ষণ কমায়।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                  <label class="option" data-option="${option}">
+                    <div class="circle">${option}</div>
+                    <span class="option-text">${question.options[option]}</span>
+                  </label>
+                `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                     <div class="explanation-content">
+                       <div class="explanation-label">ব্যাখ্যা:</div>
+                       ${question.explanation}
+                     </div>
+                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                <p class="question-label">${index + 1}. ${question.question}</p>
+                <div class="options">
+                  ${optionsHTML}
+                </div>
+                ${explanationHTML}
+              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
